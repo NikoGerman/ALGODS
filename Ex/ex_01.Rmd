@@ -1,0 +1,33 @@
+---
+title: "ex_01"
+author: "Nikolai German"
+date: "`r Sys.Date()`"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Aufgabe 1
+
+## b) Euclid's greatest common denominator
+
+```{r}
+euclid <- function(m, n) {
+  checkmate::assertIntegerish(m, lower = 0, any.missing = FALSE, len = 1)
+  checkmate::assertIntegerish(n, lower = 0, any.missing = FALSE, len = 1)
+  if (n == 0) return(m)
+  if (m == 0) return(n)
+  cat(n, m, "\n")
+  if (m <= n) {
+    return(euclid(m, n %% m))
+  } else {
+    return(euclid(m %% n, n))
+  }
+}
+
+euclid(270, 192)
+```
+
+
