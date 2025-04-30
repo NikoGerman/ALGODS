@@ -7,6 +7,9 @@ output: pdf_document
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+library(dplyr)
+library(tidyr)
+library(ggplot2)
 ```
 
 # Aufgabe 1
@@ -29,5 +32,108 @@ euclid <- function(m, n) {
 
 euclid(270, 192)
 ```
+
+# Aufgabe 3
+## Numeric Differentation
+
+```{r}
+derive <- function(f, x0, h) {
+  checkmate::assertFunction(f, args = c("x"))
+  checkmate::assertNumeric(x0, any.missing = FALSE, len = 1)
+  #checkmate::assertNumeric(h, any.missing = FALSE, len = 1, lower = 0)
+  (f(x0 + h) - f(x0)) / h
+}
+```
+
+initialize functions and their analytical derivatives:
+
+```{r}
+cube <- function(x) x^3
+cube_ana <- function(x) 3*x^2
+
+cos_sq <- function(x) cos(x^2)
+cos_sq_ana <- function(x) -2*x*sin(x^2)
+
+sqrt_ana <- function(x) 1 / (2*sqrt(x))
+
+sqrt1000 <- function(x) sqrt(x - 1000)
+sqrt1000_ana <- function(x) 1 / (2*sqrt(x - 1000))
+```
+
+build some data:
+
+```{r}
+truth <- tibble(cube = cube_ana(1),
+           cos_sq = cos_sq_ana(1e-3),
+           sqrt = sqrt_ana(1e-6),
+           sqrt1000 = sqrt1000_ana(1000 + 1e-6)
+) %>%
+  pivot_longer(everything(), names_to = "fun", values_to = "analytical")
+
+df <- tibble(h = seq(1e-6, 10, length.out = 1000)) %>%
+  mutate(
+    cube = derive(cube, 1, h),
+    cos_sq = derive(cos_sq, 1e-3, h), 
+    sqrt = derive(sqrt, 1e-6, h),
+    sqrt1000 = derive(sqrt1000, 1000 + 1e-6, h)
+  ) %>% 
+  pivot_longer(-h, values_to = "numerical", names_to = "fun") %>%
+  left_join(truth, by = "fun") %>%
+  mutate(residual = numerical - analytical) %>%
+  pivot_longer(c(numerical, analytical), names_to = "method", values_to = "value")
+```
+
+
+Let's look at the numerical vs. the analytical values:
+
+```{r echo=FALSE}
+ggplot(df, aes(x = h, y = value, color = method)) +
+  geom_line() +
+  scale_x_log10() +
+  facet_wrap(~fun, scales = "free_y") +
+  theme_light()
+```
+
+
+
+And at the resiudals:
+
+```{r echo=FALSE}
+ggplot(df, aes(x = h, y = residual)) +
+  geom_line() +
+  scale_x_log10() +
+  facet_wrap(~fun, scales = "free_y") +
+  theme_light()
+```
+
+
+# Exercise 4
+## a) Matrix Product
+
+```{r}
+mat_prod <- function(a, b) {
+  checkmate::assertMatrix(a, min.rows = 1, min.cols = 1, any.missing = FALSE)
+  checkmate::assertMatrix(b, nrows = ncol(a), min.cols = 1, any.missing = FALSE)
+  
+  res <- matrix(nrow = nrow(a), ncol = ncol(b))
+  
+  for (i in seq_len(nrow(res))) {
+    for (j in seq_len(ncol(res))) {
+      res[i,j] <- sum(a[i, ] * b[, j])
+    }
+  }
+  res
+}
+```
+
+
+```{r}
+a <- matrix(runif(20), nrow = 4)
+b <- matrix(rnorm(15), nrow = 5)
+
+mat_prod(a, b)
+a %*% b
+```
+
 
 
