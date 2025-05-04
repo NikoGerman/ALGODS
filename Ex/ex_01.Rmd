@@ -107,8 +107,8 @@ ggplot(df, aes(x = h, y = residual)) +
 ```
 
 
-# Exercise 4
-## a) Matrix Product
+# Exercise 4: Matrix Product
+## a) 
 
 ```{r}
 mat_prod <- function(a, b) {
@@ -135,5 +135,40 @@ mat_prod(a, b)
 a %*% b
 ```
 
+## b)
+```{r}
+sq_m <- function(k) {
+  checkmate::assertIntegerish(k, any.missing = FALSE, lower = 1)
+  n <- 2^k
+  a <- matrix(runif(n^2), nrow = n)
+  b <- matrix(rnorm(n^2), nrow = n)
+  mean(microbenchmark::microbenchmark(mat_prod(a, b))$time)
+}
+
+sq_m2 <- function(k) {
+  checkmate::assertIntegerish(k, any.missing = FALSE, lower = 1)
+  n <- 2^k
+  a <- matrix(runif(n^2), nrow = n)
+  b <- matrix(rnorm(n^2), nrow = n)
+  mean(microbenchmark::microbenchmark(a %*% b)$time)
+}
+
+for (k in seq_len(8)) {
+  print(sq_m(k))
+}
+
+
+benchmarks <- tibble(k = 1:12, mat_prod = NA)
+benchmarks$mat_prod2 <- NA
+
+for (i in seq_len(8)) {
+  benchmarks$mat_prod[[i]] <- sq_m(i)
+}
+
+for (i in seq_len(12)) {
+  benchmarks$mat_prod2[[i]] <- sq_m2(i)
+}
+
+```
 
 
