@@ -1,0 +1,63 @@
+---
+title: "ex_04"
+author: "Nikolai German"
+date: "`r Sys.Date()`"
+output: pdf_document
+---
+
+```{r}
+find_eps <- function(x, verbose = FALSE, nmax = 100) {
+  checkmate::assertNumeric(x, lower = 0, len = 1, any.missing = FALSE)
+  lower <- 0
+  upper <- x
+  
+  i <- 1
+  
+  while (i < nmax) {
+    candidate <- abs(upper - lower) / 2
+    if(verbose) cat(sprintf("%.64f || %d \n", candidate + x, ((candidate == upper) | (candidate == lower))))
+    if (candidate == upper | candidate == lower) return(structure(upper, "lower" = lower))
+    if (candidate + x == x) {
+      lower <- candidate
+    } else {
+      upper <- candidate
+    }
+    i <- i + 1
+  }
+  
+  # while (i < nmax) {
+  #   mid <- abs(upper - lower) / 2
+  #   if (x + mid > x) {
+  #     upper <- mid
+  #   } else {
+  #     lower <- mid
+  #   }
+  #   if((x + mid == x)) {
+  #     break
+  #   }
+  #   i <- i + 1
+  #   if(verbose) cat(sprintf("%.64f || %d", mid + x, (x + mid == x)), "\n")
+  # }
+  # structure(upper, "lower" = lower)
+}
+```
+
+
+```{r}
+find_eps(2, verbose = TRUE) + 2 == 2
+sprintf("%.32f", find_eps(2) + 2)
+attr(find_eps(2), "lower") + 2 == 2
+
+find_eps(6e-309) + 6e-309 == 6e-309
+attr(find_eps(6e-309), "lower") + 6e-309 == 6e-309
+```
+
+
+
+```{r}
+df <- data.frame(x = seq(2^-1024, 2^-1020, length.out = 100))
+df$u_x <- vapply(df$x, find_eps, numeric(1))
+
+plot(log(df$x), log(df$u_x), type = "l", xlab = "log(x)", ylab = "log(u(x))")
+```
+
