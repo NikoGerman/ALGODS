@@ -1,0 +1,77 @@
+---
+title: "ex_05"
+author: "Nikolai German"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+
+```{r}
+getMaxProfit <- function(price.changes) {
+  checkmate::assertNumeric(price.changes, lower = 0,
+  any.missing = FALSE, finite = TRUE, min.len = 1)
+  n <- length(price.changes)
+  max.profit <- 1.0
+  for (day.buy in seq_len(n)) {
+    # loop to n + 1 to sell after the last day
+    for (day.sell in seq(day.buy + 1, n + 1)) {
+      profit <- prod(price.changes[seq(day.buy, day.sell - 1)])
+      if (profit > max.profit) {
+      max.profit <- profit
+      }
+    }
+  }
+max.profit
+}
+
+getMaxProfit(c(1.1, .99, 1.2, 1.2, .5))
+```
+
+```{r}
+getMaxProfit2 <- function(price.changes) {
+  checkmate::assertNumeric(price.changes, lower = 0,
+  any.missing = FALSE, finite = TRUE, min.len = 1)
+  n <- length(price.changes)
+  max.profit <- 1.0
+  for (day.buy in seq_len(n)) {
+    # loop to n + 1 to sell after the last day
+    profit <- 1.0
+    for (day.sell in seq(day.buy + 1, n + 1)) {
+      profit <- profit * price.changes[[day.sell - 1]]
+      # profit <- prod(price.changes[seq(day.buy, day.sell - 1)])
+      if (profit > max.profit) {
+      max.profit <- profit
+      }
+    }
+  }
+max.profit
+}
+
+getMaxProfit2(c(1.1, .99, 1.2, 1.2, .5))
+```
+
+
+```{r}
+getMaxProfit3 <- function(price.changes) {
+  checkmate::assertNumeric(price.changes, lower = 0,
+  any.missing = FALSE, finite = TRUE, min.len = 1)
+  
+  log.price.changes <- log(price.changes)
+  
+  current.profit <- 0
+  max.profit <- 0
+  
+  for (i in seq_along(log.price.changes)) {
+    current.profit <- max(0, current.profit + log.price.changes[[i]])
+    if (current.profit > max.profit) {
+      max.profit <- current.profit
+    }
+  }
+  exp(max.profit)
+}
+
+getMaxProfit3(c(1.1, .7, 1.2, 1.2, .5))
+
+```
+
+
