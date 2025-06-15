@@ -1,0 +1,110 @@
+---
+title: "ex_07"
+author: "Nikolai German"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(R6)
+```
+
+```{r}
+queue <- R6Class(
+  public = list(
+    initialize = function() {
+      private$.start <- 1
+      private$.end <- 0
+      },
+    enqueue = function(x) {
+      if (private$.end - private$.start >= 9) {
+        stop("queue is full!")
+        } else {
+          private$.end <- private$.end + 1
+          private$.queue[[private$.end]] <- x
+          invisible(self)
+        }
+      },
+    dequeue = function() {
+      if (private$.end - private$.start < 0) {
+        stop("queue is empty!")
+        } else {
+          private$.start <- private$.start + 1
+          return(private$.queue[[private$.start - 1]])
+        }
+      },
+    head = function() {
+      if (private$.end - private$.start < 0) {
+        stop("queue is empty!")
+        } else {
+          return(private$.queue[[private$.start]])
+        }
+      },
+    tail = function() {
+      if (private$.end - private$.start < 0) {
+        stop("queue is empty!")
+        } else {
+          return(private$.queue[[private$.end]])
+        }
+      },
+    size = function() {
+      return(private$.end - private$.start + 1)
+      }
+    ),
+  private = list(
+    .start = NA,
+    .end = NA,
+    .queue = list()
+    )
+  )
+```
+
+
+```{r}
+# initializing
+my.q <- queue$new()
+
+# testing empty queue
+my.q$head()
+my.q$tail()
+my.q$size()
+my.q$dequeue()
+
+# testing vectors and lists as input
+my.q$enqueue(c(1,2,3))
+my.q$enqueue(list("a",2,c(2,4)))
+my.q$size()
+my.q$head()
+my.q$tail()
+
+# testing dequeing
+my.q$dequeue()
+my.q$size()
+my.q$head()
+my.q$tail()
+
+# testing concetination
+my.q$enqueue(3)$enqueue(4)$enqueue(5)$enqueue(6)$enqueue(7)$enqueue(8)$enqueue(9)$enqueue(10)$enqueue(11)
+my.q$size()
+my.q$head()
+my.q$tail()
+
+# testing length limit
+my.q$enqueue(12)
+
+# dequeing
+my.q$dequeue()
+my.q$dequeue()
+my.q$dequeue()
+my.q$dequeue()
+my.q$dequeue()
+my.q$dequeue()
+my.q$dequeue()
+my.q$dequeue()
+my.q$dequeue()
+my.q$dequeue()
+my.q$size()
+
+```
+

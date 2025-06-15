@@ -3,6 +3,10 @@ title: "ex_05"
 author: "Nikolai German"
 date: "`r Sys.Date()`"
 output: html_document
+execute: 
+  warning: false
+  message: false
+  echo: false
 ---
 
 
@@ -71,6 +75,55 @@ getMaxProfit3 <- function(price.changes) {
 }
 
 getMaxProfit3(c(1.1, .7, 1.2, 1.2, .5))
+
+```
+
+Ex. 3 'atime'
+
+```{r warning=FALSE}
+f1 <- function(N) sample(seq_len(N))
+f2 <- function(N) seq_len(N)
+f3 <- function(N, times = 10) {
+  prop <- seq_len(times*N)
+  logi.prop <- sample(rep(c(1, rep(0, 9)), times))
+  prop[as.logical(logi.prop)]
+}
+
+funs <- list(f1, f2, f3)
+result <- list()
+
+for (i in seq_along(funs)) {
+  result[[i]] <- atime::atime(
+    setup = {
+      x = funs[[i]](N)
+    },
+    radix = sort(x, method = "radix"),
+    shell = sort(x, method = "shell"),
+    quick = sort(x, method = "quick")
+  )
+}
+
+plot(result[[1]])
+plot(result[[2]])
+plot(result[[3]])
+```
+
+```{r warning=FALSE}
+result <- atime::atime(
+    setup = {
+      x = runif(N)
+    },
+    mean = mean(x),
+    length = length(x),
+    unique = unique(x),
+    any = any(x > 0),
+    all = all(x > 0),
+    sort = sort(x),
+    del.first = x[-1],
+    del.last = x[-length(x)]
+  )
+
+plot(result)
 
 ```
 
