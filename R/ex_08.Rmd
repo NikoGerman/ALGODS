@@ -1,0 +1,219 @@
+---
+title: "ex_08"
+author: "Nikolai German"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+# Ex1: Pancake Sort
+
+```{r}
+flip <- function(A, k) {
+  n <- length(A)
+  if (k > n) {
+    stop("k must be smaller than n!")
+  }
+  if (k == 1) {
+    return(rev(A))
+  } else {
+    idx <- c(seq(1, k - 1), rev(seq(k, n)))
+    return(A[idx])
+  }
+}
+
+pancake.sort <- function(A) {
+  i <- 1 # O(1)
+  N <- length(A) # O(n)
+  while(i < N) { # O(n)
+    k <- which.max(A[i:N]) # O(n)
+    A[i:N] <- flip(A[i:N], k) # O(n)
+    A[i:N] <- flip(A[i:N], 1) # O(n)
+    i <- i + 1 # O(1)
+  } # = n*(3n + 1) + n + 1 = 3n^2 + 2n + 1
+  A
+}
+
+A <- round(runif(5, 0, 20))
+pancake.sort(A)
+```
+
+Ex2: Linked List
+
+```{r}
+library(R6)
+node = R6Class(classname = "node",
+  public = list(
+    initialize = function(value, pred = NULL, succ = NULL) {
+      private$.value = value
+      if (!is.null(pred)) {
+        private$.pred = pred
+      }
+      if (!is.null(succ)) {
+        private$.succ = succ
+      }
+    },
+    set.succ = function(succ) {
+      checkmate::assertClass(succ, "node")
+      private$.succ = succ
+    },
+    get.succ = function() {
+      private$.succ
+    },
+    set.pred = function(pred) {
+      checkmate::assertClass(pred, "node")
+      private$.pred = pred
+    },
+    get.pred = function() {
+      private$.pred
+    },
+    value = function() {
+      private$.value
+    }
+  ),
+  private = list(.value = NA,
+                .pred = NA,
+                .succ = NA)
+)
+
+# n1 = node$new("bla")
+# n2 = node$new("foo")
+# n1$set.succ(n2)
+# n2$set.pred(n1)
+# n3 = n1$get.succ()
+# n3$get.pred()
+```
+
+
+```{r}
+linked.list = R6Class(
+  public = list(
+    initialize = function() {
+      private$.header$set.succ(private$.trailer)
+      private$.trailer$set.pred(private$.header)
+    },
+    append = function(x) {
+      private$.insertInPlaceOf(node.new = node$new(value = x), 
+                               node.place = private$.trailer)
+    },
+    insert = function(i, x) {
+      n = self$length()
+      checkmate::assertIntegerish(i, lower = 1, upper = (n + 1), len = 1, any.missing = FALSE)
+      if (i == n + 1) {
+        self$append(x)
+      } else {
+        private$.insertInPlaceOf(node.new = node$new(value = x),
+                                 node.place = private$.getNodeAt(i))
+        }
+    },
+    length = function() {
+      current = private$.header$get.succ()
+      i = 0
+      while (!identical(current, private$.trailer)) {
+        current = current$get.succ()
+        i = i + 1
+      }
+      return(i)
+    },
+    pop = function() {
+      if (self$length() == 0) {
+        stop("The list is empty!")
+      }
+      print(private$.trailer$get.pred()$value())
+      new.last = private$.trailer$get.pred()$get.pred()
+      private$.trailer$set.pred(new.last)
+      new.last$set.succ(private$.trailer)
+    },
+    remove = function(i) {
+      n = self$length()
+      checkmate::assertIntegerish(i, lower = 1, upper = n, len = 1, any.missing = FALSE)
+      toBeRemoved = private$.getNodeAt(i)
+      print(toBeRemoved$value())
+      private$.remove(toBeRemoved)
+    },
+    get = function(i) {
+      checkmate::assertIntegerish(i, lower = 1)
+      private$.getNodeAt(i)$value()
+    },
+    find = function(x) {
+      i = 1
+      n = self$length()
+      while (i <= n) {
+        if (identical(self$get(i), x)) {
+          return(i)
+        }
+        i = i + 1
+      }
+      return(0)
+    },
+    asList = function() {
+      result = list()
+      i = 1
+      n = self$length()
+      while (i <= n) {
+        result[[i]] = self$get(i)
+        i = i + 1
+      }
+      return(result)
+    },
+    reverse = function() {
+      i = 1
+      n = self$length()
+      while (i < n) {
+        private$.insertInPlaceOf(private$.getNodeAt(n), private$.getNodeAt(i))
+        i = i + 1
+      }
+      invisible(self)
+    }
+  ),
+  private = list(
+    .header = node$new(NULL),
+    .trailer = node$new(NULL),
+    .getNodeAt = function(i) {
+      if (i > self$length()) {
+        stop(sprintf("No node %d available, list contains only %d elements", i, self$length()))
+      }
+      current = private$.header$get.succ()
+      k = 1
+      while (k < i) {
+        current = current$get.succ()
+        k = k + 1
+      }
+      return(current)
+    },
+    .insertInPlaceOf = function(node.new, node.place) {
+      node.new$set.succ(node.place)
+      node.new$set.pred(node.place$get.pred())
+      node.place$get.pred()$set.succ(node.new)
+      node.place$set.pred(node.new)
+    },
+    .remove = function(node) {
+      node$get.pred()$set.succ(node$get.succ())
+      node$get.succ()$set.pred(node$get.pred())
+    }
+  )
+)
+
+
+ll = linked.list$new()
+
+ll$append(2)
+ll$append(3)
+ll$asList()
+ll$insert(2, "blabla")
+
+ll$reverse()
+ll2$pop()
+ll2$asList()
+
+ll$remove(2)
+ll$find(4)
+ll$get(1)
+ll$length()
+ll$insert(1, "bla")
+ll$length()
+ll$insert(5, "blablabla")
+ll$pop()
+```
+
+
+
