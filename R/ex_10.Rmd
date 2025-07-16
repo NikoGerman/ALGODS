@@ -1,0 +1,190 @@
+---
+title: "ex_10"
+author: "Nikolai German"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r}
+BSTNode <- R6::R6Class("BSTNode",
+  public = list(
+    value = NULL,
+    left = NULL,
+    right = NULL,
+    parent = NULL, # either the parent node, or the BST object itself (if this node is root)
+    initialize = function(value, parent) {
+      self$value <- value
+      self$parent <- parent
+    },
+    print = function() {
+      cat(sprintf("BSTNode(value = %s)\n", self$value))
+    },
+    insert = function(value) {
+      if (value == self$value) {
+      # value already in tree
+      # we choose to not allow duplicates
+      return()
+      }
+      if (value < self$value) {
+        target <- "left"
+      } else {
+        target <- "right"
+      }
+      if (is.null(self[[target]])) {
+        self[[target]] <- BSTNode$new(value, self)
+      } else {
+        self[[target]]$insert(value)
+      }
+    },
+    search = function(value) {
+      if (value == self$value) {
+        return(self)
+      }
+      if (value < self$value) {
+        if (is.null(self$left)) {
+          return(NULL)
+        } else {
+          return(self$left$search(value))
+        }
+      }
+      if (value > self$value) {
+        if (is.null(self$right)) {
+          return(NULL)
+        } else {
+          return(self$right$search(value))
+        }
+      }
+    },
+    findMinimum = function() {
+      if (is.null(self$left)) {
+        return(self)
+      } else {
+        return(self$left$findMinimum())
+      }
+    },
+    delete = function() {
+      
+      
+      if (private$.isLeaf(self)) {
+        # node is leaf
+        if(is.null(self$parent)) {
+          # node is root
+          return()
+        } else {
+          # node is not root
+          if (identical(self$parent$left, self)) {
+            self$parent$left <- NULL
+          } else {
+            self$parent$right <- NULL
+          }
+        }
+      } else if (!is.null(self$right) & !is.null(self$left)) {
+        # node has two children
+        replacement <- self$right$findMinimum()
+        if (!is.null(self$parent)) {
+          if (identical(self$parent$left, self)) {
+            self$parent$left <- replacement
+          } else {
+            self$parent$right <- replacement
+          }
+        }
+        replacement$left <-self$left
+        if (identical(replacement, self$right)) {
+          replacement$right <- NULL
+        } else {
+          replacement$right <- self$right
+        }
+      } else {
+        # node has exactly one child
+        if (is.null(self$right)) {
+          private$.fixFamily(self, "left")
+          # no right child
+        } else {
+          # no left child
+          private$.fixFamily(self, "right")
+        }
+      }
+
+    }
+  ),
+  private = list(
+    .isLeaf = function(node) {
+      if (is.null(node$left) & is.null(node$right)) {
+        return(TRUE)
+      } else {
+        return(FALSE)
+      }
+    },
+    .fixFamily = function(node, target) {
+      if (identical(node$parent$left, node)) {
+        node$parent$left <- node[[target]]
+        node[[target]]$parent <- node$parent
+      } else {
+        node$parent$right <- node[[target]]
+        node[[target]]$parent <- node$parent
+      }
+    }
+  )
+)
+```
+
+
+```{r}
+BST <- R6::R6Class("BST",
+  public = list(
+    root = NULL,
+    insert = function(value) {
+      if (is.null(self$root)) {
+        self$root <- BSTNode$new(value, self)
+      } else {
+        self$root$insert(value)
+      }
+    },
+    search = function(value) {
+      if (is.null(self$root)) {
+        return(NULL)
+      }
+      self$root$search(value)
+    },
+    findMinimum = function() {
+      if (is.null(self$root)) {
+        return(NULL)
+      }
+    self$root$findMinimum()
+    },
+    print = function(indent.step = 6) {
+    # very simple printer that prints a sideways representation of the tree
+      if (is.null(self$root)) {
+        cat("Tree:\n<empty>\n")
+      return()
+      }
+      cat("Tree:\n")
+      draw <- function(node, indent = 0) {
+        if (is.null(node)) return()
+          draw(node$right, indent + indent.step)
+          cat(sprintf("%*s%s\n", indent, "", node$value))
+          draw(node$left, indent + indent.step)
+        }
+      draw(self$root, 0)
+    }
+  )
+)
+```
+
+```{r}
+bst <- BST$new()
+bst$insert(10)
+bst$insert(20)
+bst$insert(5)
+bst$insert(7)
+bst$insert(15)
+bst$insert(30)
+
+bst$print()
+
+bst$findMinimum()
+bst$search(20)$findMinimum()
+
+bst$search(15)$delete()
+```
+

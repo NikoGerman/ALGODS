@@ -1,0 +1,122 @@
+---
+title: "ex_11"
+author: "Nikolai German"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+# Ex 1: Distributions
+
+## a)
+
+### i) Geometric Distribution
+
+#### 2)
+
+We take the Geometric Distribution quite literally, and just "flip" coins until we get a success, while counting, how many times we've been unsuccesfull.
+
+```{r}
+rgeom_custom <- function(n = 1, p = .5) {
+  inner <- function() {
+    x <- 0
+    repeat {
+      u <- runif(1)
+      if (u < p) {
+        break
+      } else {
+      x <- x + 1
+      }
+    }
+  return(x)
+  }
+  replicate(n, inner())
+}
+
+samp <- rgeom_custom(100, .2)
+hist(samp)
+```
+
+
+### ii) Cauchy Distribution
+
+#### 2)
+We use somewhat a reverse Box-Muller approach. We know that if we sample $r \in [0,1]$ and $\theta \in [0, 2\pi]$, we obtain points within the unit circle $(r \cos(\theta), r \sin(\theta))$. Thus $X/Y$ simplifies to $\frac{r \cos(\theta)}{r \sin(\theta)} = \frac{1}{\tan(\theta)}$
+
+```{r}
+set.seed(121)
+samp <- 1/tan(2*pi*runif(100))
+dens <- density(samp)
+
+plot(dcauchy, xlim = c(-10,10), lty = "dashed")
+lines(dens$x, dens$y, col = "blue")
+```
+### iii) Poisson Distribution
+
+We simply sample independently from the exponential distribution until the cumulative sum is greater than 1. The number of samples, which did not cause to overflow is possion distributed.
+
+```{r}
+
+rpois_custom <- function(n, lambda = 1) {
+  inner <- function() {
+    t <- 0
+    x <- 0
+    while (t < 1) {
+      t <- t - log(runif(1)) / lambda # Inversion for EXP
+      if (t < 1) {
+        x <- x + 1
+      }
+    }
+    return(x)
+  }
+  replicate(n, inner())
+}
+
+samp <- rpois_custom(10000, 2)
+
+hist(samp, freq = FALSE, breaks = 10)
+plot(function(x) dpois(round(x), 2), add = TRUE, col = "blue", lwd = 3, xlim = c(0, 10))
+
+```
+
+
+
+
+## b)
+
+The sum of squared i.i.d. standard normals is chi-squared distributed.
+
+We use box-muller to generate i.i.d. standard normals:
+
+```{r}
+rchi2 <- function(n) {
+  inner <- function() {
+    r <- sqrt(-2*log(runif(1)))
+    theta <- 2*pi*runif(1)
+    X <- r * cos(theta)
+    Y <- r * sin(theta)
+    return(X^2 + Y^2)
+  }
+  replicate(n, inner())
+}
+
+
+samp <- rchi2(1000)
+hist(samp, freq = FALSE, xlim = c(0,10))
+plot(function(x) dchisq(x, df = 2), xlim = c(0,10), add = TRUE, lty = "dashed", lwd = 1.5)
+```
+
+```{r}
+# other topic: worst case convergence of qmc
+
+mc <- function(x) 1/sqrt(x)
+qmc <- function(x, d = 1) ((log(x)^d)/x)
+
+par(mfrow = c(2,3))
+for (d in c(1, 3, 5, 10, 50, 100)) {
+  plot(function(x) qmc(x, d=d), xlim = c(1,1e5), main = sprintf("d = %d", d), log = "xy")
+  plot(mc, xlim = c(1,1e5), lty = "dashed", add = TRUE)
+}
+
+
+```
+
