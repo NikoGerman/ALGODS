@@ -3,5 +3,6 @@
 .RData*
 .Ruserdata
 .DS_Store
-Lit/*
-VL/*
+Lit/
+VL/
+Ex/

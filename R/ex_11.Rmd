@@ -36,7 +36,6 @@ samp <- rgeom_custom(100, .2)
 hist(samp)
 ```
 
-
 ### ii) Cauchy Distribution
 
 #### 2)
@@ -50,6 +49,7 @@ dens <- density(samp)
 plot(dcauchy, xlim = c(-10,10), lty = "dashed")
 lines(dens$x, dens$y, col = "blue")
 ```
+
 ### iii) Poisson Distribution
 
 We simply sample independently from the exponential distribution until the cumulative sum is greater than 1. The number of samples, which did not cause to overflow is possion distributed.
@@ -83,40 +83,189 @@ plot(function(x) dpois(round(x), 2), add = TRUE, col = "blue", lwd = 3, xlim = c
 
 ## b)
 
-The sum of squared i.i.d. standard normals is chi-squared distributed.
+The sum of two squared standard normal rvs is a chi-squared rv with $df=2$.
+For the CDF of a $\mathcal{X}^2$ rv, the following holds:
 
-We use box-muller to generate i.i.d. standard normals:
+$$
+F(x) = 1 - \exp(-\frac{x}{2})
+$$
+
+Therefore the inverse of this CDF can be computed as:
+
+\begin{align*}
+  u &= 1 - \exp(-\frac{x}{2}) \\
+  -\frac{x}{2} &= \log(1 - u) \\
+  x &= -2 \cdot log(1 - u)
+\end{align*}
+
+Since $u \sim \text{Unif}(0,1) \implies 1-u \sim \text{Unif}(0,1)$, we can write $Q(U) = -2 \cdot log(U)$
+
+Next we want to find a way to decompose a $\mathcal{X}^2_2$ rv into two standard normals:
+
+We could simply use a uniform auxilary variable to compute the fraction of $X^2$ and $Y^2$, the use the square root. This has a major limitation, that it will only return positve values. To overcome this, we would need to sample again in order to generate the sign, which would leave us with four uniform samples to generate two standard normals:
 
 ```{r}
-rchi2 <- function(n) {
-  inner <- function() {
-    r <- sqrt(-2*log(runif(1)))
-    theta <- 2*pi*runif(1)
-    X <- r * cos(theta)
-    Y <- r * sin(theta)
-    return(X^2 + Y^2)
-  }
-  replicate(n, inner())
+fourtotwo <- function() {
+  chi <- -2*log(runif(1))
+  frac <- runif(1)
+  X_sq <- frac * chi
+  Y_sq <- (1-frac) * chi
+  X <- ifelse(runif(1) > .5, 1, -1) * sqrt(X_sq)
+  Y <- ifelse(runif(1) > .5, 1, -1) * sqrt(Y_sq)
+  return(c(X, Y))
 }
-
-
-samp <- rchi2(1000)
-hist(samp, freq = FALSE, xlim = c(0,10))
-plot(function(x) dchisq(x, df = 2), xlim = c(0,10), add = TRUE, lty = "dashed", lwd = 1.5)
 ```
 
+```{r echo=FALSE}
+par(mfrow = c(2,2))
+for (n in c(5, 15, 50, 500)) {
+  samp <- c(replicate(n, fourtotwo()))
+  dens <- density(samp)
+  plot(dnorm, 
+       lty = "dashed", 
+       lwd = 1.5, 
+       xlim = c(-5, 5), 
+       ylim = c(0, .6), 
+       main = sprintf("n = %d samples", 2*n))
+  lines(dens$x, 
+        dens$y, 
+        xlim = c(-5,5))
+}
+```
+
+This shows promising results in the tails, yet around the expectation, the density of samples do not follow a standard normal.
+
+Another decompostion could be the folowing: We know that $\sin^2(\theta) + \cos^2(\theta) = 1$. We multiply both sides by $r \sim \mathcal{X}^2_2$, which we obtained by inversion: $r \sin^2(\theta) + r \cos^2(\theta) = r$. Then we can identify $X^2 = r \sin^2(\theta)$ and $Y^2 = r \cos^2(\theta)$, which leads us to $X = \sqrt{r} \sin(\theta)$ and $Y = \sqrt{r} \cos(\theta)$.
+
 ```{r}
-# other topic: worst case convergence of qmc
+box.muller <- function() {
+  r <- sqrt(-2*log(runif(1)))
+  theta <- 2*pi*runif(1)
+  X <- r * cos(theta)
+  Y <- r * sin(theta)
+  return(c(X, Y))
+}
+```
 
-mc <- function(x) 1/sqrt(x)
-qmc <- function(x, d = 1) ((log(x)^d)/x)
 
-par(mfrow = c(2,3))
-for (d in c(1, 3, 5, 10, 50, 100)) {
-  plot(function(x) qmc(x, d=d), xlim = c(1,1e5), main = sprintf("d = %d", d), log = "xy")
-  plot(mc, xlim = c(1,1e5), lty = "dashed", add = TRUE)
+```{r echo=FALSE}
+par(mfrow = c(2,2))
+for (n in c(5, 15, 50, 500)) {
+  samp <- c(replicate(n, box.muller()))
+  dens <- density(samp)
+  plot(dnorm, 
+       lty = "dashed", 
+       lwd = 1.5, 
+       xlim = c(-5, 5), 
+       ylim = c(0, .6), 
+       main = sprintf("n = %d samples", 2*n))
+  lines(dens$x, 
+        dens$y, 
+        xlim = c(-5,5))
+}
+```
+
+# Exercise 2: Mersenne Twister
+
+Bit manipulation helper functions:
+
+```{r}
+toBits <- function(x) {
+  res <- integer(32)
+  for (i in seq_len(32)) {
+    if (x %% 2 == 1) {
+      res[[33-i]] <- 1
+    } else { 
+      res[[33-i]] <- 0
+    }
+    x <- x %/% 2
+  }
+  res
 }
 
+bitsToInt <- function(bits) {
+  # lsb: left
+  sum(2^(which(bits == 1) - 1))
+}
+
+toBits(bitsToInt(c(1,1,0,1)))
+
+test <- toBits(98789)
+
+bitsToInt(rev(test))
+```
+
+Temper Function: $z = xT$
+
+```{r}
+temper <- function(x,
+                   u = 11,
+                   d = 0xFFFFFFFF,
+                   l = 18,
+                   s = 7,
+                   b = 0x9D2C5680,
+                   t = 15,
+                   c = 0xEFC60000) {
+  y <- bitops::bitShiftR(x, u) |> bitops::bitAnd(d) |> bitops::bitXor(x)
+  y <- bitops::bitShiftL(y, s) |> bitops::bitAnd(b) |> bitops::bitXor(y)
+  y <- bitops::bitShiftL(y, t) |> bitops::bitAnd(c) |> bitops::bitXor(y)
+  z <- bitops::bitShiftR(y, l) |> bitops::bitXor(y)
+  return(z)
+}
+```
+
+Mersenne-Twister
+
+```{r}
+mersenneStep <- function(x, 
+                         n = 624, # degree of recurrence
+                         m = 397, # middle word, an offset used in the recurrence relation defining the series
+                         c = 31, # separation point of one word, or the number of bits of the lower bitmask
+                         w = 32, # word size (in number of bits)
+                         a = 0x9908B0DF # coefficients of the rational normal form twist matrix
+                         ) {
+  checkmate::assertNumeric(x, len = n)
+  checkmate::assertIntegerish(c, upper = w, lower = 1)
+  
+  A <- rbind(cbind(rep(0, (w - 1)), diag((w - 1))), (toBits(a)))
+  
+  x <- c(x, numeric(n))
+  
+  for (k in seq_len(n)) {
+    L <- toBits(x[[k]])[seq_len(c)]
+    R <- toBits(x[[k+1]])[-seq_len(c)]
+    tmp <- bitsToInt(rev(c(L, R)) %*% A)
+    # L <- intToBits(x[[k]])[seq_len(c)]
+    # R <- intToBits(x[[k+1]])[-seq_len(c)]
+    # tmp <- bitsToInt(as.integer(c(L, R)) %*% A)
+    x_prop <- bitops::bitXor(x[[k + m]], tmp) 
+    x[[k + n]] <- temper(x_prop)
+  }
+  
+  x <- x[-seq_len(n)]
+  u <- x / 2^32
+  return(list(x = x,
+              u = u)
+         )
+}
+
+
+debugonce(mersenneStep)
+mersenneStep(x)
+
+
+set.seed(1)
+x <- .Random.seed[-c(1, 2)] # the first two elements are meta-information
+mstep <- mersenneStep(x)
+unifs <- runif(624)
+identical(unifs, mstep$u)
+
+plot(mstep$u, col = "red", pch = 2)
+points(unifs, col = "blue")
+
+mstep <- mersenneStep(mstep$x)
+unifs <- runif(624)
+identical(unifs, mstep$u)
 
 ```
 
