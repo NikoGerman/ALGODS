@@ -1,0 +1,165 @@
+---
+title: "ex_12"
+author: "Nikolai German"
+date: "`r Sys.Date()`"
+output: html_document
+---
+# Exercise 1: Newton-Cotes
+
+```{r}
+# trapezoid rule
+trap <- function(fun, l = 0, u = 1, by = .25) {
+  checkmate::assertFunction(fun)
+  
+  x <- seq(l, u, by = by)
+  weights <- c(.5, .5)
+  
+  I <- 0
+  
+  for (i in seq_len(length(x) - 1)) {
+    y <- seq(x[[i]], x[[i + 1]], length.out = 2)
+    evals <- weights * fun(y)
+    I <- I + (x[[i + 1]] - x[[i]]) * sum(evals)
+  }
+  return(I)
+}
+
+trap(function(x) x^4)
+```
+
+
+```{r}
+# simpson rule
+simpson <- function(fun, l = 0, u = 1, by = .25) {
+  checkmate::assertFunction(fun)
+  
+  x <- seq(l, u, by = by)
+  weights <- c(1/6, 4/6, 1/6)
+  
+  I <- 0
+  
+  for (i in seq_len(length(x) - 1)) {
+    y <- seq(x[[i]], x[[i + 1]], length.out = 3)
+    evals <- weights * fun(y)
+    I <- I + (x[[i + 1]] - x[[i]]) * sum(evals)
+  }
+  return(I)
+}
+
+simpson(function(x) x^4)
+```
+
+
+```{r}
+# boole's rule
+boole <- function(fun, l = 0, u = 1, by = .25) {
+  checkmate::assertFunction(fun)
+  
+  x <- seq(l, u, by = by)
+  weights <- c(7, 32, 12, 32, 7) / 90
+  
+  I <- 0
+  
+  for (i in seq_len(length(x) - 1)) {
+    y <- seq(x[[i]], x[[i + 1]], length.out = 5)
+    evals <- weights * fun(y)
+    I <- I + (x[[i + 1]] - x[[i]]) * sum(evals)
+  }
+  return(I)
+}
+
+boole(function(x) x^4)
+```
+
+```{r}
+# newton cotes - need to supply the weights
+newton.cotes <- function(fun, weights, l = 0, u = 1, by = .25) {
+  checkmate::assertFunction(fun)
+  x <- seq(l, u, by = by)
+  I <- 0
+  for (i in seq_len(length(x) - 1)) {
+    y <- seq(x[[i]], x[[i + 1]], length.out = length(weights))
+    evals <- weights * fun(y)
+    I <- I + (x[[i + 1]] - x[[i]]) * sum(evals)
+  }
+  return(I)
+}
+```
+
+Try out the generalized Newton-Cotes algorithm for $\int_0^1 \exp(x) = e - 1$:
+
+```{r}
+newton.cotes(exp, c(7, 32, 12, 32, 7) / 90, by = .1)
+exp(1) - 1
+```
+
+# Exercise 2: Adaptive Integration
+
+## a) Simpson Step
+
+```{r}
+simpsonStep <- function(f, a, b) {
+  x <- seq(a, b, length.out = 3)
+  weights <- c(1/6, 4/6, 1/6)
+  (b - a) * sum(weights * f(x))
+}
+```
+
+## b) Adaptive Simpson
+
+```{r}
+adaptiveSimpson <- function(f, a, b, tol) {
+  c <- a + (b - a) / 2
+  Q1 <- simpsonStep(f, a, b)
+  Q2 <- simpsonStep(f, a, c) + simpsonStep(f, c, b)
+  
+  approx.error <- 1/15 * abs(Q1 - Q2)
+  
+  if (approx.error < tol) {
+    return(Q2)
+  } else {
+    Q3 <- adaptiveSimpson(f = f, a = a, b = c, tol = tol/2) + adaptiveSimpson(f = f, a = c, b = b, tol = tol/2)
+    return(Q3)
+  }
+}
+
+adaptiveSimpson(function(x) sin(1/x), 0.01, 1, 1e-8)
+```
+
+```{r}
+adaptiveSimpsonWithPoints <- function(f, a, b, tol) {
+  c <- a + (b - a) / 2
+  Q1 <- simpsonStep(f, a, b)
+  Q2 <- simpsonStep(f, a, c) + simpsonStep(f, c, b)
+  
+  approx.error <- 1/15 * abs(Q1 - Q2)
+  
+  if (approx.error < tol) {
+    res <- Q2
+    points <- c(a, c, b)
+  } else {
+    L <- adaptiveSimpsonWithPoints(f = f, a = a, b = c, tol = tol/2)
+    R <- adaptiveSimpsonWithPoints(f = f, a = c, b = b, tol = tol/2)
+    res <- L + R
+    points <- unique(c(attr(L, "points"), attr(R, "points")))
+  }
+  structure(res, points = points)
+}
+```
+
+
+```{r}
+val <- adaptiveSimpsonWithPoints(function(x) sin(1/x), 0.01, 1, 1e-8)
+library(ggplot2)
+ggplot() +
+  stat_function(fun = function(x) sin(1/x)) +
+  scale_x_continuous(limits = c(0.01,1)) +
+  geom_rug(aes(x = attr(val, "points"))) +
+  labs(x = "evaluation points", y = "function value") +
+  theme_light()
+```
+
+
+
+
+

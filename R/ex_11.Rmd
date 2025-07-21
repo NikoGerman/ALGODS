@@ -238,7 +238,8 @@ mersenneStep <- function(x,
     # L <- intToBits(x[[k]])[seq_len(c)]
     # R <- intToBits(x[[k+1]])[-seq_len(c)]
     # tmp <- bitsToInt(as.integer(c(L, R)) %*% A)
-    x_prop <- bitops::bitXor(x[[k + m]], tmp) 
+    x_prop <- bitops::bitXor(x[[k + m]], tmp)
+    # x[[k + n]] <- x_prop
     x[[k + n]] <- temper(x_prop)
   }
   
@@ -248,11 +249,6 @@ mersenneStep <- function(x,
               u = u)
          )
 }
-
-
-debugonce(mersenneStep)
-mersenneStep(x)
-
 
 set.seed(1)
 x <- .Random.seed[-c(1, 2)] # the first two elements are meta-information
