@@ -39,6 +39,7 @@ hist(samp)
 ### ii) Cauchy Distribution
 
 #### 2)
+
 We use somewhat a reverse Box-Muller approach. We know that if we sample $r \in [0,1]$ and $\theta \in [0, 2\pi]$, we obtain points within the unit circle $(r \cos(\theta), r \sin(\theta))$. Thus $X/Y$ simplifies to $\frac{r \cos(\theta)}{r \sin(\theta)} = \frac{1}{\tan(\theta)}$
 
 ```{r}
@@ -78,13 +79,9 @@ plot(function(x) dpois(round(x), 2), add = TRUE, col = "blue", lwd = 3, xlim = c
 
 ```
 
-
-
-
 ## b)
 
-The sum of two squared standard normal rvs is a chi-squared rv with $df=2$.
-For the CDF of a $\mathcal{X}^2$ rv, the following holds:
+The sum of two squared standard normal rvs is a chi-squared rv with $df=2$. For the CDF of a $\mathcal{X}^2$ rv, the following holds:
 
 $$
 F(x) = 1 - \exp(-\frac{x}{2})
@@ -147,7 +144,6 @@ box.muller <- function() {
 }
 ```
 
-
 ```{r echo=FALSE}
 par(mfrow = c(2,2))
 for (n in c(5, 15, 50, 500)) {
@@ -187,12 +183,14 @@ bitsToInt <- function(bits) {
   # lsb: left
   sum(2^(which(bits == 1) - 1))
 }
+```
 
-toBits(bitsToInt(c(1,1,0,1)))
-
-test <- toBits(98789)
-
-bitsToInt(rev(test))
+```{r}
+# toBits(bitsToInt(c(1,1,0,1)))
+# 
+# test <- toBits(98789)
+# 
+# bitsToInt(rev(test))
 ```
 
 Temper Function: $z = xT$
@@ -240,16 +238,19 @@ mersenneStep <- function(x,
     # tmp <- bitsToInt(as.integer(c(L, R)) %*% A)
     x_prop <- bitops::bitXor(x[[k + m]], tmp)
     # x[[k + n]] <- x_prop
-    x[[k + n]] <- temper(x_prop)
+    x[[k + n]] <- x_prop
   }
   
   x <- x[-seq_len(n)]
-  u <- x / 2^32
+  y <- vapply(x, temper, numeric(1))
+  u <- y / 2^32
   return(list(x = x,
               u = u)
          )
 }
+```
 
+```{r}
 set.seed(1)
 x <- .Random.seed[-c(1, 2)] # the first two elements are meta-information
 mstep <- mersenneStep(x)
@@ -259,9 +260,12 @@ identical(unifs, mstep$u)
 plot(mstep$u, col = "red", pch = 2)
 points(unifs, col = "blue")
 
-mstep <- mersenneStep(mstep$x)
-unifs <- runif(624)
-identical(unifs, mstep$u)
+set.seed(1)
+runif(1)
+head(.Random.seed)
+
+identical(temper(.Random.seed[[.Random.seed[[2]] + 3]]) /2^32, runif(1))
 
 ```
 
+hintere teile auch relevant!!! (was nicht in der übung war) pseudo code

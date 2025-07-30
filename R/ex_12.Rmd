@@ -25,8 +25,9 @@ trap <- function(fun, l = 0, u = 1, by = .25) {
 }
 
 trap(function(x) x^4)
-```
 
+
+```
 
 ```{r}
 # simpson rule
@@ -109,7 +110,7 @@ simpsonStep <- function(f, a, b) {
 
 ```{r}
 adaptiveSimpson <- function(f, a, b, tol) {
-  c <- a + (b - a) / 2
+  c <- (a + b) / 2
   Q1 <- simpsonStep(f, a, b)
   Q2 <- simpsonStep(f, a, c) + simpsonStep(f, c, b)
   
@@ -147,19 +148,13 @@ adaptiveSimpsonWithPoints <- function(f, a, b, tol) {
 }
 ```
 
-
 ```{r}
-val <- adaptiveSimpsonWithPoints(function(x) sin(1/x), 0.01, 1, 1e-8)
+val <- adaptiveSimpsonWithPoints(function(x) sin(1/x), 0.01, 1, 1e-3)
 library(ggplot2)
 ggplot() +
   stat_function(fun = function(x) sin(1/x)) +
   scale_x_continuous(limits = c(0.01,1)) +
-  geom_rug(aes(x = attr(val, "points"))) +
+  geom_rug(aes(x = attr(val, "points")), color = "red") +
   labs(x = "evaluation points", y = "function value") +
   theme_light()
 ```
-
-
-
-
-
